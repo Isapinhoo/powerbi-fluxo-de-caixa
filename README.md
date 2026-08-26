@@ -1,87 +1,154 @@
-# 📊 Dashboard Financeiro + Fluxo de Caixa
+# 📊 Dashboard Financeiro — Fluxo de Caixa e KPIs
 
-> Dashboard interativo de análise financeira desenvolvido no Power BI, com foco em KPIs de receita, custos, despesas, lucro e fluxo de caixa mensal.
+Dashboard interativo de análise financeira em Power BI, com modelagem dimensional em Star Schema, ETL em Power Query e medidas em DAX para receita, custos, despesas, lucro e fluxo de caixa mensal.
 
-![Status](https://img.shields.io/badge/Status-Concluído-brightgreen?style=flat-square)
-![Tool](https://img.shields.io/badge/Power%20BI-F2C811?style=flat-square&logo=powerbi&logoColor=black)
-![Type](https://img.shields.io/badge/Tipo-Análise%20Financeira-blue?style=flat-square)
+> **Sobre os dados.** A base é fictícia e cobre recebimentos e pagamentos de 2017 a 2024. Os valores não representam nenhuma operação real: há anos com resultado negativo, o que serve justamente para exercitar o comportamento das medidas de margem e variação quando o denominador é negativo ou próximo de zero.
 
 ---
 
-## 📋 Sobre o Projeto
+## 🎯 A pergunta que o projeto responde
 
-Este projeto consiste em um dashboard financeiro completo desenvolvido em **Power BI**, com o objetivo de analisar o desempenho financeiro de uma empresa ao longo do ano. O relatório apresenta uma visão consolidada de receitas, custos, despesas e lucro, além de uma análise detalhada do fluxo de caixa mensal.
+Relatório financeiro costuma parar em "quanto entrou e quanto saiu". Isso não sustenta decisão.
 
-O modelo de dados segue a arquitetura **Star Schema**, com tabelas fato e dimensão devidamente relacionadas, e medidas calculadas em **DAX**.
+As perguntas que este dashboard responde são outras:
 
----
+- O resultado do mês veio de receita maior ou de custo menor?
+- Quanto do pagamento é fixo e quanto é variável — ou seja, quanto dá pra cortar se precisar?
+- Qual cliente concentra receita a ponto de virar risco?
+- Lucro e caixa contam a mesma história neste mês?
 
-## 📄 Páginas do Dashboard
+A última é a que mais importa e a que mais gente ignora: **lucro é competência, caixa é liquidez.** Uma empresa lucrativa quebra por caixa.
 
-### 🏠 Home
-Página de entrada com navegação para as demais seções do relatório.
-
-### 📈 Visão Geral
-Painel com os principais KPIs financeiros e análises por dimensão:
-- **Receita Total:** R$ 35.334.463
-- **Custos:** R$ 43.837.917
-- **Despesas:** R$ 11.517.571
-- **Lucro:** -R$ 20.021.025
-
-Visuais incluídos:
-- Receita por Mês (gráfico de barras)
-- Receita por Tipo de Conta — Operacional vs Não Operacional (gráfico de rosca)
-- Pagamentos por Tipo — Fixo vs Variável (gráfico de rosca)
-- Pagamentos por Mês e Tipo (gráfico de barras empilhadas)
-- Receita por Cliente (ranking dos principais clientes)
-
-### 🔍 Detalhamento — Fluxo de Caixa
-Análise mensal detalhada do fluxo de caixa:
-- Gráfico de cascata (waterfall) do fluxo de caixa mês a mês
-- Tabela com evolução mensal de Receitas, Custos, Despesas, Lucro e % de Lucro
+Os indicadores foram escolhidos a partir de quatro anos de rotina fiscal e financeira, produzindo o relatório mensal que a diretoria de fato usava — não a partir de um template.
 
 ---
 
-## 🗂️ Modelo de Dados (Star Schema)
+## 🖥️ Preview
 
-| Tabela | Tipo | Descrição |
-|--------|------|-----------|
-| `fRecebimentos` | Fato | Registros de recebimentos por cliente |
-| `fPagamentos` | Fato | Registros de pagamentos realizados |
-| `dCalendario` | Dimensão | Tabela de datas (ano, mês, dia) |
-| `dPlanoContas` | Dimensão | Plano de contas (conta, tipo, lançamento) |
-| `_Medidas` | Medidas DAX | Cálculos: % Lucro, Custos, Despesas, Lucro, Margem Bruta, Receitas |
+<!-- TODO: exportar os prints das duas páginas, criar a pasta docs/images/, commitar os arquivos e remover este comentário.
 
----
+### Visão Geral
+![Visão Geral do dashboard financeiro](docs/images/visao-geral.png)
 
-## 🛠️ Tecnologias Utilizadas
+### Detalhamento — Fluxo de Caixa
+![Gráfico de cascata do fluxo de caixa mensal](docs/images/fluxo-de-caixa.png)
 
-- **Power BI Desktop** — criação do relatório e visualizações
-- **DAX (Data Analysis Expressions)** — cálculo das medidas financeiras
-- **Power Query** — transformação e tratamento dos dados
-- **Star Schema** — modelagem dos dados
+-->
 
 ---
 
-## ✨ Funcionalidades
+## 🗂️ Modelo de dados (Star Schema)
 
-- ✅ KPIs financeiros em tempo real com filtro por ano
-- ✅ Análise de receita por mês, tipo de conta e cliente
-- ✅ Classificação de pagamentos entre fixos e variáveis
-- ✅ Fluxo de caixa em gráfico de cascata (waterfall)
-- ✅ Tabela analítica com variação percentual de lucro mês a mês
-- ✅ Navegação entre páginas com botões interativos
+| Tabela | Tipo | Conteúdo |
+|---|---|---|
+| `fRecebimentos` | Fato | Recebimentos por cliente e data |
+| `fPagamentos` | Fato | Pagamentos realizados, por conta e data |
+| `dCalendario` | Dimensão | Tabela de datas contínua, marcada como tabela de datas |
+| `dPlanoContas` | Dimensão | Plano de contas: conta, tipo e natureza do lançamento |
+| `_Medidas` | Medidas | Receitas, Custos, Despesas, Lucro, % Lucro, Margem Bruta |
+
+```
+        dCalendario                 dPlanoContas
+             │                            │
+             ├──────────┬─────────────────┤
+             ▼          ▼                 ▼
+      fRecebimentos          fPagamentos
+```
+
+### Decisões de modelagem
+
+**Por que Star Schema e não uma tabela única.** Duas razões concretas. A primeira é tamanho: texto repetido (nome de cliente, descrição de conta) comprime muito melhor isolado numa dimensão do que replicado em cada linha da fato. A segunda, e mais importante: com duas tabelas fato e uma tabela única eu não teria um eixo de tempo comum — não daria para comparar recebimento e pagamento no mesmo mês sem ambiguidade de relacionamento.
+
+**Por que uma tabela calendário dedicada.** As funções de time intelligence do DAX (`SAMEPERIODLASTYEAR`, `DATEADD`, `TOTALYTD`) exigem uma tabela de datas contínua e marcada como tal. Usar a coluna de data da própria fato quebra em dois casos: um mês sem lançamento simplesmente desaparece do eixo, e duas fatos não teriam um calendário comum para se relacionar.
+
+**Relacionamentos unidirecionais.** Dimensão filtra fato, em uma direção só. Filtro bidirecional abre mais de um caminho entre as tabelas e é a origem clássica do total que muda quando você mexe num filtro sem motivo aparente.
 
 ---
 
-## 📸 Screenshots
+## 📄 Páginas
 
-> Adicione aqui prints das páginas do dashboard.
+### Home
+Navegação para as demais seções.
+
+### Visão Geral
+KPIs consolidados com filtro por ano, e a leitura por dimensão:
+
+- Receita por mês
+- Receita por tipo de conta — operacional vs. não operacional
+- Pagamentos por tipo — fixo vs. variável
+- Pagamentos por mês e tipo (barras empilhadas)
+- Receita por cliente, para leitura de concentração
+
+### Detalhamento — Fluxo de Caixa
+- Gráfico de cascata mês a mês, mostrando de onde vem cada variação
+- Tabela com evolução mensal de receitas, custos, despesas, lucro e % de lucro
+
+---
+
+## 🧮 Medidas em DAX
+
+```dax
+Receitas = SUM( fRecebimentos[Valor] )
+
+Custos =
+CALCULATE(
+    SUM( fPagamentos[Valor] ),
+    dPlanoContas[Tipo] = "Custo"
+)
+
+Despesas =
+CALCULATE(
+    SUM( fPagamentos[Valor] ),
+    dPlanoContas[Tipo] = "Despesa"
+)
+
+Lucro = [Receitas] - [Custos] - [Despesas]
+
+% Lucro = DIVIDE( [Lucro], [Receitas] )
+```
+
+`DIVIDE` em vez do operador `/`: devolve em branco na divisão por zero, em vez de erro. Num relatório financeiro com meses sem receita, isso é a diferença entre um visual limpo e um visual cheio de `#ERRO`.
+
+---
+
+## 🛠️ Stack
+
+| Camada | Ferramenta |
+|---|---|
+| ETL | Power Query — limpeza, padronização e tipagem antes da carga |
+| Modelagem | Star Schema, relacionamentos unidirecionais |
+| Cálculo | DAX |
+| Visualização | Power BI Desktop |
+
+---
+
+## 🚀 Como abrir
+
+1. Baixe o [Power BI Desktop](https://powerbi.microsoft.com/desktop/) (gratuito, Windows).
+2. Clone o repositório:
+   ```bash
+   git clone https://github.com/Isapinhoo/powerbi-fluxo-de-caixa.git
+   ```
+3. Abra o `.pbix` dentro da pasta `Power BI - Financeiro + Fluxo de Caixa/`.
+
+As bases de origem ficam em `01 - DataBase/` (recebimentos por ano e mês, pagamentos por ano, e o cadastro de plano de contas) e os planos de fundo das páginas em `00 - Assets/Background/`. Se o Power Query reclamar do caminho das fontes, aponte a pasta `01 - DataBase` no seu clone local.
+
+---
+
+## 🔭 Próximos passos
+
+- [ ] Comparativo com o mesmo período do ano anterior (`SAMEPERIODLASTYEAR`)
+- [ ] Indicador de concentração de receita por cliente (participação do top 5)
+- [ ] Separação entre regime de competência e regime de caixa
+- [ ] Projeção simples de caixa para os próximos 3 meses
+- [ ] Publicação no Power BI Service com atualização agendada
 
 ---
 
 ## 👩‍💻 Autora
 
-**Ingridy Isabelli**  
-[![LinkedIn](https://img.shields.io/badge/LinkedIn-0077B5?style=flat-square&logo=linkedin&logoColor=white)](https://www.linkedin.com/in/isapinho)
-[![GitHub](https://img.shields.io/badge/GitHub-181717?style=flat-square&logo=github&logoColor=white)](https://github.com/ingridypinho)
+**Ingridy Isabelli Sant'Ana de Pinho**
+Sistemas de Informação — Universidade Anhembi Morumbi
+SQL · Python · Power BI · Salesforce Marketing Cloud
+
+[LinkedIn](https://linkedin.com/in/isapinho) · [GitHub](https://github.com/Isapinhoo)
